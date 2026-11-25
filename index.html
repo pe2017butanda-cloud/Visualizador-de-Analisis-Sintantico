@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Visualizador LL(1) — Butanda López Pablo Ernesto</title>
+<style>
+:root{--bg:#030814;--card:#071029;--card2:#0a1636;--line:#16295c;--tx:#e8ecf6;--mu:#8d9ab8;--ac:#2f7bff;--ok:#2fd6a0;--er:#ff4d63;--wa:#f2c75c;--mono:"JetBrains Mono",Consolas,"Courier New",monospace;--sans:Inter,"Segoe UI",system-ui,sans-serif}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(1200px 500px at 50% -10%,#0b1a4a 0,var(--bg) 60%) fixed;color:var(--tx);font:14px var(--sans);min-height:100vh}
+.top{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;padding:16px 28px;background:linear-gradient(90deg,#0a2a74,#0b1a4a 60%,#071029);border-bottom:1px solid var(--line)}
+.top h1{margin:0;font-size:22px;letter-spacing:.01em}.top p{margin:4px 0 0;color:#a9c3ff;font-size:13px}
+.au{text-align:right;line-height:1.4}.au span{display:block;color:#a9c3ff;font-size:11px;letter-spacing:.14em;text-transform:uppercase}.au b{font-size:15px}
+.wrap{max-width:1680px;margin:0 auto;padding:14px;display:grid;gap:14px;grid-template-columns:370px minmax(0,1fr);align-items:start}
+.side,.main{display:grid;gap:14px;min-width:0}
+.duo{display:grid;gap:14px;grid-template-columns:minmax(250px,2fr) minmax(0,5fr);align-items:start}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden;min-width:0;box-shadow:0 0 0 1px #000 inset}
+.card>h2{margin:0;padding:15px 20px;font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--ac);border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:10px;align-items:center}
+.card>h2 small{font-size:11px;color:var(--mu);letter-spacing:.12em}
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:14px 20px;border-bottom:1px solid var(--line)}
+button,select{font:600 14px var(--sans);color:var(--tx);background:var(--card2);border:1px solid var(--line);border-radius:9px;padding:10px 16px;cursor:pointer}
+button:hover{border-color:var(--ac)}
+button.p{background:var(--ac);border-color:var(--ac);color:#fff}
+button:focus-visible,select:focus-visible,textarea:focus-visible,input:focus-visible{outline:2px solid var(--wa);outline-offset:2px}
+select{padding-right:8px}
+.ed{display:flex;height:190px;background:var(--bg)}
+.gut{width:46px;padding:14px 8px 14px 0;text-align:right;color:var(--mu);font:14px/1.65 var(--mono);border-right:1px solid var(--line);overflow:hidden;white-space:pre;user-select:none}
+.gut b{color:var(--er)}
+textarea{flex:1;background:transparent;color:var(--tx);border:0;resize:none;padding:14px 16px;font:15px/1.65 var(--mono);outline-offset:-2px}
+.msg{padding:0 20px 14px;color:var(--er);font-size:13px;min-height:18px}
+.pill{display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:999px;font-weight:700;letter-spacing:.08em;font-size:13px;border:1px solid}
+.pill.ok{color:var(--ok);border-color:var(--ok);background:#0a2a2a}
+.pill.er{color:var(--er);border-color:var(--er);background:#2a0a16}
+.pill.wa{color:var(--wa);border-color:var(--wa);background:#2a220a}
+.body{padding:16px 20px}
+.row{margin-bottom:12px;font-family:var(--mono);line-height:1.7}
+.row b{color:var(--mu);font-family:var(--sans);font-weight:600;margin-right:6px}
+.nt{color:var(--ac)}.tm{color:var(--ok)}
+.prods{max-height:150px;overflow:auto;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 14px;font:14px/1.7 var(--mono)}
+.prods i{color:var(--mu);font-style:normal;display:inline-block;width:2.2em}
+.note{margin-top:12px;padding:12px 14px;border-radius:12px;border:1px solid var(--er);border-left-width:4px;background:#1a0710;font-size:13px;line-height:1.6;display:none}
+.note.show{display:block}.note.good{border-color:var(--ok);background:#06201d}
+.tw{overflow:auto;max-height:270px}
+table{border-collapse:collapse;width:100%;font:13px var(--mono)}
+th{position:sticky;top:0;background:var(--card2);color:var(--ac);text-align:left;padding:9px 12px;font:700 12px var(--sans);letter-spacing:.08em;border-bottom:1px solid var(--line)}
+td{padding:8px 12px;border-bottom:1px solid #0f1d44;white-space:pre-wrap;vertical-align:top}
+td.f{color:var(--ac);font-weight:700}
+td.cf{background:#2a0a16;color:var(--er)}
+td.hl{background:#4a3d12;color:var(--wa);outline:2px solid var(--wa);outline-offset:-2px}
+tr.err td{background:#2a0a16;color:var(--er)}
+tr.fin td{background:#06201d;color:var(--ok)}
+tr.cur td{background:#2a220a}
+.sim{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:14px 20px}
+input{background:var(--bg);color:var(--tx);border:1px solid var(--line);border-radius:9px;padding:10px 14px;font:15px var(--mono);width:240px}
+.chip{font-family:var(--mono);color:var(--ok);padding:7px 11px}
+.lbl{color:var(--mu)}
+.sp{flex:1}
+#vmsg{padding:0 20px 14px;color:var(--mu);font-size:13px;min-height:20px}
+@media(max-width:1100px){.wrap,.duo{grid-template-columns:1fr}}
+@media(max-width:600px){.top{padding:14px 16px}input{width:100%}}
+@media(prefers-reduced-motion:no-preference){button{transition:border-color .15s}}
+</style>
+</head>
+<body>
+<header class="top"><div><h1>Visualizador de análisis sintáctico predictivo LL(1)</h1><p>Autómatas I · Act. 2</p></div><div class="au"><span>Autor</span><b>Butanda López Pablo Ernesto</b></div></header>
+<div class="wrap">
+ <aside class="side">
+  <section class="card">
+    <h2>Editor de gramática <small id="pos">Ctrl+Enter para analizar</small></h2>
+    <div class="bar">
+      <button class="p" id="bAn">▶ Analizar</button>
+      <select id="ex" aria-label="Ejemplos precargados"></select>
+      <button id="bClr">Limpiar</button>
+    </div>
+    <div class="ed"><div class="gut" id="gut"></div><textarea id="gt" spellcheck="false" aria-label="Gramática"></textarea></div>
+    <div class="msg" id="gerr"></div>
+  </section>
+
+  <section class="card">
+    <h2>Resultado del análisis</h2>
+    <div class="bar"><span class="pill ok" id="ll1">✔ LL(1)</span><span class="lbl" id="cnt"></span></div>
+    <div class="body">
+      <div class="row"><b>No terminales:</b><span class="nt" id="lnt"></span></div>
+      <div class="row"><b>Terminales:</b><span class="tm" id="ltm"></span></div>
+      <div class="prods" id="pl"></div>
+      <div class="note" id="cfl"></div>
+    </div>
+  </section>
+
+  </aside>
+ <main class="main"><div class="duo">
+  <section class="card">
+    <h2>Conjuntos FIRST y FOLLOW</h2>
+    <div class="tw"><table><thead><tr><th>No terminal</th><th>FIRST</th><th>FOLLOW</th></tr></thead><tbody id="tff"></tbody></table></div>
+  </section>
+
+  <section class="card">
+    <h2>Matriz predictiva LL(1)</h2>
+    <div class="tw"><table><thead id="mh"></thead><tbody id="mb"></tbody></table></div>
+  </section>
+
+  </div>
+  <section class="card">
+    <h2>Análisis de una cadena paso a paso</h2>
+    <div class="sim">
+      <span class="lbl">Cadena:</span><input id="inp" autocomplete="off" aria-label="Cadena">
+      <button class="p" id="bRun">▶ Analizar</button>
+      <span class="lbl">Ejemplos:</span><span id="smp"></span>
+    </div>
+    <div class="sim" style="padding-top:0">
+      <button id="bS">⏮ Inicio</button><button id="bP">◀ Anterior</button><button class="p" id="bN">Siguiente ▶</button>
+      <button id="bA">▶ Auto</button><button id="bAll">Mostrar todo</button>
+      <span class="lbl" id="stp"></span><span class="sp"></span><span class="pill" id="vd" style="visibility:hidden">—</span>
+    </div>
+    <div class="tw" style="max-height:400px"><table><thead><tr><th style="width:60px">Paso</th><th>Pila (tope a la derecha)</th><th>Entrada pendiente</th><th>Producción / acción</th></tr></thead><tbody id="tr"></tbody></table></div>
+    <div id="vmsg"></div>
+  </section>
+ </main>
+</div>
+
+<script>
+const EPS="ε",EMPTY=["ε","eps","epsilon","λ",""];
+const EXAMPLES={
+"Ejemplo 1: expresiones sencillas":["E → T E'\nE' → + T E' | ε\nT → F T'\nT' → * F T' | ε\nF → ( E ) | id",["id+id","id*id","id+id*id","(id+id)*id","id+*id"]],
+"Ejemplo 2: cadenas con a y b":["S → aSb | ε",["ab","aabb","aaabbb","aab","abb"]],
+"Extra: con conflicto (no LL(1))":["S → a S | a",["a","aa"]],
+"Extra: recursión izquierda (no LL(1))":["E → E + T | T\nT → id",["id+id"]]};
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+const fmt=p=>`${p[0]} → ${p[1].length?p[1].join(" "):EPS}`;
+
+function tokRhs(alt,nts){
+  if(/\s/.test(alt))return alt.split(/\s+/).filter(x=>!EMPTY.includes(x));
+  const ns=[...nts].sort((a,b)=>b.length-a.length),out=[];let i=0;
+  while(i<alt.length){
+    const n=ns.find(x=>alt.startsWith(x,i));
+    if(n){out.push(n);i+=n.length;continue}
+    const m=/^[a-z0-9_]+/.exec(alt.slice(i)),t=m?m[0]:alt[i];
+    out.push(t);i+=t.length;
+  }
+  return out;
+}
+class Grammar{
+  constructor(text){
+    const lines=text.split("\n").map(l=>l.trim()).filter(Boolean);
+    if(!lines.length)throw new Error("La gramática está vacía.");
+    const raw=[];this.nts=[];
+    for(const l of lines){
+      const m=/^(\S+?)\s*(?:->|→)\s*(.*)$/.exec(l);
+      if(!m)throw new Error(`Línea inválida: «${l}». Usa el formato A → α | β`);
+      if(!this.nts.includes(m[1]))this.nts.push(m[1]);
+      raw.push([m[1],m[2]]);
+    }
+    this.prods=[];
+    for(const[lhs,rhs]of raw)for(const alt of rhs.split("|")){
+      const a=alt.trim();this.prods.push([lhs,EMPTY.includes(a)?[]:tokRhs(a,this.nts)]);
+    }
+    this.terms=[];
+    for(const[,r]of this.prods)for(const x of r)if(!this.nts.includes(x)&&!this.terms.includes(x))this.terms.push(x);
+    this.start=this.nts[0];this.compute();
+  }
+  firstSeq(seq){
+    const r=new Set();
+    for(const X of seq){
+      if(!this.nts.includes(X)){r.add(X);return r}
+      for(const y of this.F[X])if(y!==EPS)r.add(y);
+      if(!this.F[X].has(EPS))return r;
+    }
+    r.add(EPS);return r;
+  }
+  compute(){
+    const add=(to,from)=>{let c=false;for(const x of from)if(!to.has(x)){to.add(x);c=true}return c};
+    this.F={};this.Fo={};this.nts.forEach(n=>{this.F[n]=new Set();this.Fo[n]=new Set()});
+    let ch=true;
+    while(ch){ch=false;for(const[l,r]of this.prods)if(add(this.F[l],this.firstSeq(r)))ch=true}
+    this.Fo[this.start].add("$");ch=true;
+    while(ch){ch=false;
+      for(const[l,r]of this.prods)r.forEach((B,i)=>{
+        if(!this.nts.includes(B))return;
+        const s=this.firstSeq(r.slice(i+1)),nw=new Set([...s].filter(x=>x!==EPS));
+        if(s.has(EPS))this.Fo[l].forEach(x=>nw.add(x));
+        if(add(this.Fo[B],nw))ch=true;
+      });
+    }
+    this.T={};this.nts.forEach(n=>this.T[n]={});
+    this.prods.forEach(([l,r],i)=>{
+      const s=this.firstSeq(r),keys=new Set([...s].filter(x=>x!==EPS));
+      if(s.has(EPS))this.Fo[l].forEach(x=>keys.add(x));
+      keys.forEach(a=>(this.T[l][a]=this.T[l][a]||[]).push(i));
+    });
+    this.conf=[];this.nts.forEach(n=>Object.entries(this.T[n]).forEach(([a,e])=>{if(e.length>1)this.conf.push([n,a,e])}));
+    this.leftRec=this.prods.filter(p=>p[1].length&&p[1][0]===p[0]);
+  }
+  tokenize(s){
+    s=s.trim();if(/\s/.test(s))return s.split(/\s+/);
+    const ts=[...this.terms].sort((a,b)=>b.length-a.length),out=[];let i=0;
+    while(i<s.length){const t=ts.find(x=>s.startsWith(x,i))||s[i];out.push(t);i+=t.length}
+    return out;
+  }
+  simulate(tokens){
+    const inp=[...tokens,"$"],st=["$",this.start],out=[];let i=0;
+    const snap=(act,kind="",cell=null)=>out.push({st:[...st],inp:inp.slice(i).join(" "),act,kind,cell});
+    for(let k=0;k<3000;k++){
+      const X=st[st.length-1],a=inp[i];
+      if(X==="$"&&a==="$"){snap("Aceptar: pila y entrada llegaron a $","fin");return{out,ok:true,msg:"La cadena pertenece al lenguaje."}}
+      if(!this.nts.includes(X)){
+        if(X===a){snap(`Coincidir «${X}»: se desapila y se avanza en la entrada`);st.pop();i++;continue}
+        const msg=`Se esperaba «${X}» pero se encontró «${a}»`;snap("Error: "+msg,"err");return{out,ok:false,msg};
+      }
+      const e=this.T[X][a];
+      if(!e){
+        const unk=a!=="$"&&!this.terms.includes(a)?" (símbolo no reconocido)":"";
+        const msg=`M[${X}, ${a}] está vacía${unk}`;snap("Error: "+msg,"err");return{out,ok:false,msg};
+      }
+      const p=this.prods[e[0]];
+      snap(`Aplicar ${fmt(p)}   (M[${X}, ${a}], regla ${e[0]+1})`,"",[X,a]);
+      st.pop();st.push(...[...p[1]].reverse());
+    }
+    return{out,ok:false,msg:"Se excedió el límite de pasos (posible ciclo)."};
+  }
+}
+
+let G=null,steps=[],cur=0,verdict=null,job=null,cells=new Map();
+
+function lineNums(){
+  const n=$("gt").value.split("\n").length;
+  $("gut").innerHTML=Array.from({length:n},(_,i)=>i+1).join("\n");
+  $("gut").scrollTop=$("gt").scrollTop;
+}
+function loadExample(){
+  const[g,ss]=EXAMPLES[$("ex").value];
+  $("gt").value=g;lineNums();
+  $("smp").innerHTML="";
+  ss.forEach(s=>{const b=document.createElement("button");b.className="chip";b.textContent=s;b.onclick=()=>{$("inp").value=s;run()};$("smp").append(b)});
+  $("inp").value=ss[0];analyze();run();
+}
+const setTxt=s=>"{ "+[...s].sort((a,b)=>(a==="$")-(b==="$")||(a<b?-1:a>b?1:0)).join(", ")+" }";
+
+function analyze(){
+  try{G=new Grammar($("gt").value)}catch(e){G=null;$("gerr").textContent=e.message;return false}
+  $("gerr").textContent="";
+  $("lnt").textContent=G.nts.join("  ");
+  $("ltm").textContent=G.terms.join("  ")||"—";
+  $("cnt").textContent=`${G.prods.length} producciones · ${G.nts.length} no terminales · ${G.terms.length} terminales`;
+  $("pl").innerHTML=G.prods.map((p,i)=>`<div><i>${i+1}.</i>${esc(fmt(p))}</div>`).join("");
+  $("tff").innerHTML=G.nts.map(n=>`<tr><td class="f">${esc(n)}</td><td>${esc(setTxt(G.F[n]))}</td><td>${esc(setTxt(G.Fo[n]))}</td></tr>`).join("");
+  const cols=[...G.terms,"$"];
+  $("mh").innerHTML="<tr><th>M[A, a]</th>"+cols.map(c=>`<th>${esc(c)}</th>`).join("")+"</tr>";
+  cells=new Map();$("mb").innerHTML="";
+  G.nts.forEach(n=>{
+    const tr=document.createElement("tr"),h=document.createElement("td");h.className="f";h.textContent=n;tr.append(h);
+    cols.forEach(c=>{
+      const e=G.T[n][c],td=document.createElement("td");
+      if(e){td.textContent=(e.length>1?"⚠ ":"")+e.map(i=>"→ "+(G.prods[i][1].join(" ")||EPS)).join(" | ");if(e.length>1)td.className="cf"}
+      cells.set(n+"\u0000"+c,td);tr.append(td);
+    });
+    $("mb").append(tr);
+  });
+  const ok=!G.conf.length,pill=$("ll1");
+  pill.className="pill "+(ok?"ok":"er");pill.textContent=ok?"✔ ES LL(1)":"✘ NO ES LL(1)";
+  const c=$("cfl");let html="";
+  if(!ok)html+="<b>Conflictos:</b> "+G.conf.map(([n,a,e])=>`M[${esc(n)}, ${esc(a)}] tiene ${e.length} producciones`).join("; ")+".";
+  if(G.leftRec.length)html+=(html?"<br>":"")+"<b>Recursión izquierda en:</b> "+G.leftRec.map(p=>esc(fmt(p))).join(", ")+".";
+  if(!html)html="Ninguna celda de la matriz tiene más de una producción.";
+  c.innerHTML=html;c.className="note show"+(ok&&!G.leftRec.length?" good":"");
+  return true;
+}
+function run(){
+  if(!G&&!analyze())return;
+  stop();
+  const r=G.simulate(G.tokenize($("inp").value));
+  steps=r.out;verdict=r;cur=steps.length-1;draw();
+}
+function draw(){
+  const last=steps.length-1,tb=$("tr");tb.innerHTML="";
+  steps.slice(0,cur+1).forEach((s,i)=>{
+    const tr=document.createElement("tr");
+    if(s.kind)tr.className=s.kind;else if(i===cur&&cur<last)tr.className="cur";
+    tr.innerHTML=`<td>${i+1}</td><td>${esc(s.st.join("  "))}</td><td>${esc(s.inp)}</td><td>${esc(s.act)}</td>`;
+    tb.append(tr);
+  });
+  tb.lastElementChild&&tb.lastElementChild.scrollIntoView({block:"nearest"});
+  cells.forEach(td=>td.classList.remove("hl"));
+  const s=steps[cur];
+  if(s&&s.cell){const td=cells.get(s.cell[0]+"\u0000"+s.cell[1]);td&&td.classList.add("hl")}
+  $("stp").textContent=`Paso ${cur+1} de ${steps.length}`;
+  const vd=$("vd");
+  if(cur===last){
+    vd.style.visibility="visible";vd.className="pill "+(verdict.ok?"ok":"er");
+    vd.textContent=verdict.ok?"✔ ACEPTADA":"✘ RECHAZADA";$("vmsg").textContent=verdict.msg;
+  }else{vd.style.visibility="hidden";$("vmsg").textContent=""}
+}
+function stop(){if(job){clearInterval(job);job=null;$("bA").textContent="▶ Auto"}}
+function auto(){
+  if(job)return stop();
+  if(cur>=steps.length-1)cur=0;
+  draw();$("bA").textContent="⏸ Pausar";
+  job=setInterval(()=>{if(cur<steps.length-1){cur++;draw()}else stop()},700);
+}
+
+$("ex").innerHTML=Object.keys(EXAMPLES).map(k=>`<option>${k}</option>`).join("");
+$("ex").onchange=loadExample;
+$("bAn").onclick=()=>{analyze();run()};
+$("bClr").onclick=()=>{$("gt").value="";lineNums();$("gt").focus()};
+$("gt").addEventListener("input",lineNums);
+$("gt").addEventListener("scroll",()=>$("gut").scrollTop=$("gt").scrollTop);
+$("gt").addEventListener("keydown",e=>{if(e.ctrlKey&&e.key==="Enter"){analyze();run()}});
+$("gt").addEventListener("keyup",()=>{const t=$("gt"),b=t.value.slice(0,t.selectionStart).split("\n");$("pos").textContent=`Ln ${b.length}, Col ${b[b.length-1].length+1} · Ctrl+Enter para analizar`});
+$("bRun").onclick=run;
+$("inp").addEventListener("keydown",e=>{if(e.key==="Enter")run()});
+$("bS").onclick=()=>{stop();cur=0;draw()};
+$("bP").onclick=()=>{stop();cur=Math.max(0,cur-1);draw()};
+$("bN").onclick=()=>{stop();cur=Math.min(steps.length-1,cur+1);draw()};
+$("bAll").onclick=()=>{stop();cur=steps.length-1;draw()};
+$("bA").onclick=auto;
+loadExample();
+</script>
+</body>
+</html>
